@@ -19,45 +19,35 @@ package auth
 
 import (
 	"crypto/tls"
+	"io"
 	"net/http"
-	"github.com/apache/pulsar-client-go/pulsar/auth"
 )
 
-type disabled struct{}
+// Provider is an interface of authentication providers.
+type Provider interface {
+	// Init the authentication provider.
+	Init() error
 
-// NewAuthDisabled return a interface of Provider
-func NewAuthDisabled() auth.Provider {
-	return &disabled{}
+	// Name func returns the identifier for this authentication method.
+	Name() string
+
+	// GetTLSCertificate returns a client certificate chain, or nil if the data are not available
+	GetTLSCertificate() (*tls.Certificate, error)
+
+	// GetData returns the authentication data identifying this client that will be sent to the broker.
+	GetData() ([]byte, error)
+
+	io.Closer
+
+	HTTPAuthProvider
 }
 
-func (disabled) Init() error {
-	return nil
+type HTTPAuthProvider interface {
+	RoundTrip(req *http.Request) (*http.Response, error)
+	Transport() http.RoundTripper
+	WithTransport(tripper http.RoundTripper) error
 }
 
-func (disabled) GetData() ([]byte, error) {
-	return nil, nil
-}
-
-func (disabled) Name() string {
-	return ""
-}
-
-func (disabled) GetTLSCertificate() (*tls.Certificate, error) {
-	return nil, nil
-}
-
-func (disabled) Close() error {
-	return nil
-}
-
-func (d disabled) RoundTrip(req *http.Request) (*http.Response, error) {
-	return nil, nil
-}
-
-func (d disabled) Transport() http.RoundTripper {
-	return nil
-}
-
-func (d disabled) WithTransport(tripper http.RoundTripper) error {
-	return nil
+type HTTPTransport struct {
+	T http.RoundTripper
 }
